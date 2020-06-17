@@ -3,7 +3,7 @@
 var validator = require("validator");
 var bcrypt = require("bcrypt-nodejs");
 var User = require("../models/user");
-const { param } = require("../routes/user");
+var jwt = require("../services/jwt");
 
 var controller = {
   probando: function (req, res) {
@@ -24,11 +24,17 @@ var controller = {
     var params = req.body;
 
     // Realizar las validaciones
-    var validate_name = !validator.isEmpty(params.name);
-    var validate_surname = !validator.isEmpty(params.surname);
-    var validate_email =
-      !validator.isEmpty(params.email) && validator.isEmail(params.email);
-    var validate_password = !validator.isEmpty(params.password);
+    try {
+      var validate_name = !validator.isEmpty(params.name);
+      var validate_surname = !validator.isEmpty(params.surname);
+      var validate_email =
+        !validator.isEmpty(params.email) && validator.isEmail(params.email);
+      var validate_password = !validator.isEmpty(params.password);
+    } catch (e) {
+      return res.send(404).send({
+        message: "Faltan datos por enviar, intenta de nuevo",
+      });
+    }
 
     if (
       validate_name &&
@@ -96,9 +102,15 @@ var controller = {
     var params = req.body;
 
     // Validar los datos
-    var validator_name =
-      !validator.isEmpty(params.email) && validator.isEmail(params.email);
-    var validator_password = !validator.isEmpty(params.password);
+    try {
+      var validator_name =
+        !validator.isEmpty(params.email) && validator.isEmail(params.email);
+      var validator_password = !validator.isEmpty(params.password);
+    } catch (e) {
+      return res.status(404).send({
+        message: "Faltan datos por enviar",
+      });
+    }
 
     if (!validator_name || !validator_password) {
       return res.status(500).send({
@@ -120,22 +132,109 @@ var controller = {
       bcrypt.compare(params.password, user.password, (err, check) => {
         if (check) {
           // Generar el token y devolverlo
+          if (params.gettoken) {
+            return res.status(200).send({
+              token: jwt.createTokebn(user),
+            });
+          } else {
+            // limpiar los datos del usuario
+            user.password = undefined;
 
-          // Devolver los datos
-          return res.status(200).send({
-            message: "success",
-            user,
-          });
+            // Devolver los datos
+            return res.status(200).send({
+              message: "success",
+              user,
+            });
+          }
         } else {
           return res.status(500).send({
-            message: 'Las credenciales no son correctas, intentalo de nuevo'
+            message: "Las credenciales no son correctas, intentalo de nuevo",
           });
         }
       });
     });
   },
-
   // Finalizando el método de logueo de usuarios
+
+  // iniciando el método de actualización de usuarios
+  update: function (req, res) {
+    // Recojer los datos del usuario
+    var params = req.body;
+
+    // Validar los datos
+    try {
+      var validate_name = !validator.isEmpty(params.name);
+      var validate_surname = !validator.isEmpty(params.surname);
+      var validate_email =
+        !validator.isEmpty(params.email) && validator.isEmail(params.email);
+    } catch (e) {
+      return res.status(200).send({
+        message: "Faltan datos para enviar",
+      });
+    }
+
+    // eliminar las propiedades innecesarias
+    delete params.password;
+    var userId = req.user.sub;
+
+    // Comprobar si el email es único
+    if (req.user.email != params.email) {
+      User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
+        if (err) {
+          return res
+            .status(500)
+            .send({ message: "Error al intentar realizar el registro" });
+        }
+        if (user && user.email == params.email) {
+          return res.status(200).send({ message: "El email no pudo ser modificado" });
+        }
+      });
+    }
+
+    // Buscar y actualizar el documento
+    User.findOneAndUpdate(
+      { _id: userId },
+      params,
+      { new: true },
+      (err, userUpdated) => {
+        if (err) {
+          return res.status(500).send({
+            status: "error",
+            message: "Error con la actualización del usuario",
+          });
+        }
+        if (!userUpdated) {
+          return res.status(500).send({
+            message: "error",
+            message: "No se pudo actualizar el  usuario",
+          });
+        }
+        return res.status(200).send({
+          status: "success",
+          user: userUpdated,
+        });
+      }
+    ); 
+  }, // fin del método actualización
+
+  // Iniciar el método para subir un avatar
+  uploadAvatar: (req, res) => {
+    // configurar modulo multiparty
+
+    // Recojer el fichero de la petición
+
+    // Conseguir el nombre y la extensión del arhivo
+
+    // comprobar la extensión sólo imágenes, si no es válida se elimina el fichero
+
+    // Sacar el id del usuario identificado
+
+    // Devolve una respuesta
+    return res.status(200).send({
+      message: 'Método de subida de avatar'
+    });
+  }, 
+  // finalizando el método para subir un avatar
 };
 
 module.exports = controller;
