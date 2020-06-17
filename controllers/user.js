@@ -6,6 +6,7 @@ var User = require("../models/user");
 var fs = require("fs");
 var path = require("path");
 var jwt = require("../services/jwt");
+const { send } = require("process");
 
 var controller = {
   probando: function (req, res) {
@@ -299,6 +300,43 @@ var controller = {
     });
   },
   // finalizando el método de devolver avatar
+
+  // iniciando el método de devolver los usuario
+  getUsers: (req, res) => {
+    User.find().exec((err, users) => {
+      if (err || !users) {
+        return res.status(404).send({
+          status: "error",
+          message: "No hay usuarios que mostrar",
+        });
+      }
+      return res.status(200).send({
+        status: "success",
+        users,
+      });
+    });
+  },
+  // finalizando el método de devolver los usuario
+
+  // iniciando el método de devolver un usuario
+  getUser: (req, res) => {
+    var userId = req.params.userId;
+
+    User.findById(userId).exec((err, user) => {
+      if (err || !user) {
+        return res.status(404).send({
+          status: "success",
+          message: "No hay usuario que mostrar",
+        });
+      }
+
+      return res.status(200).send({
+        status: "success",
+        user,
+      });
+    });
+  },
+  // finalizando el método de devolver un usuario
 };
 
 module.exports = controller;
