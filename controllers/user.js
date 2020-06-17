@@ -3,6 +3,8 @@
 var validator = require("validator");
 var bcrypt = require("bcrypt-nodejs");
 var User = require("../models/user");
+var fs = require("fs");
+var path = require("path");
 var jwt = require("../services/jwt");
 
 var controller = {
@@ -186,7 +188,9 @@ var controller = {
             .send({ message: "Error al intentar realizar el registro" });
         }
         if (user && user.email == params.email) {
-          return res.status(200).send({ message: "El email no pudo ser modificado" });
+          return res
+            .status(200)
+            .send({ message: "El email no pudo ser modificado" });
         }
       });
     }
@@ -214,27 +218,87 @@ var controller = {
           user: userUpdated,
         });
       }
-    ); 
+    );
   }, // fin del método actualización
 
   // Iniciar el método para subir un avatar
   uploadAvatar: (req, res) => {
-    // configurar modulo multiparty
+    // configurar modulo multiparty  => routes/user.js
 
     // Recojer el fichero de la petición
-
+    var file_name = "Archivo no recojido";
+    if (!req.files) {
+      return res.status(500).send({
+        message: "Es necesario mandar la imagen",
+      });
+    }
     // Conseguir el nombre y la extensión del arhivo
+    var file_path = req.files.file0.path;
+    var file_split = file_path.split("\\");
+    var file_name = file_split[2];
+
+    // Extensión del archivo
+    var ext_split = file_name.split(".");
+    var file_ext = ext_split[1];
 
     // comprobar la extensión sólo imágenes, si no es válida se elimina el fichero
+    if (
+      file_ext != "png" &&
+      file_ext != "jpg" &&
+      file_ext != "jpeg" &&
+      file_ext != "gif"
+    ) {
+      fs.unlink(file_path, (err) => {
+        // Devolve una respuesta
+        return res.status(200).send({
+          status: "error",
+          message: "La extensión del archivo no es válida.",
+        });
+      });
+    } else {
+      // Sacar el id del usuario identificado
+      var userId = req.user.sub;
 
-    // Sacar el id del usuario identificado
-
-    // Devolve una respuesta
-    return res.status(200).send({
-      message: 'Método de subida de avatar'
-    });
-  }, 
+      // Buscar y actualizar documento
+      User.findOneAndUpdate(
+        { _id: userId },
+        { image: file_name },
+        { new: true },
+        (err, userUpdated) => {
+          if (err || !userUpdated) {
+            // Devolve una respuesta
+            return res.status(500).send({
+              status: "error",
+              message: "Error al cargar la imagen",
+            });
+          }
+          // Devolve una respuesta
+          return res.status(200).send({
+            status: "success",
+            user: userUpdated,
+          });
+        }
+      );
+    }
+  },
   // finalizando el método para subir un avatar
+
+  // iniciando el método de devolver avatar
+  getAvatar: (req, res) => {
+    var fileName = req.params.fileName;
+    var pathFile = "./uploads/user/" + fileName;
+    fs.exists(pathFile, (exists) => {
+      if (exists) {
+        return res.sendFile(path.resolve(pathFile));
+      } else {
+        return res.status(404).send({
+          status: "error",
+          message: "Error al obtener la imagen",
+        });
+      }
+    });
+  },
+  // finalizando el método de devolver avatar
 };
 
 module.exports = controller;
