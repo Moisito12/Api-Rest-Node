@@ -8,5 +8,6 @@ var md_auth = require("../middlewares/authenticated");
 router.get("/testTopic", TopicController.test);
 router.post("/new-topics", md_auth.auth,TopicController.save);
 router.get("/topics/:pages?", TopicController.getTopics);
+router.get("/myTopics/:user", TopicController.getMyTopics);
 
 module.exports = router;

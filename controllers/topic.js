@@ -34,6 +34,7 @@ var controller = {
       topic.content = params.content;
       topic.code = params.code;
       topic.lang = params.lang;
+      topic.user = req.user.sub;
       // guardar el topic
       topic.save((err, topicStored) => {
         if (err || !topicStored) {
@@ -62,26 +63,55 @@ var controller = {
 
     // recoger la pagina actual
     if (
-      !req.params.page ||
-      req.params.page == 0 ||
-      req.params.page == "0" ||
-      req.params.page == undefined
+      !req.params.pages ||
+      req.params.pages == 0 ||
+      req.params.pages == undefined ||
+      req.params.pages == "0" ||
+      req.params.pages == 0
     ) {
       var page = 1;
     } else {
-      var page = parseInt(req.params.page);
+      var page = req.params.pages;
     }
     // indicar en las opciones de paginacion
+    var options = {
+      sort: { date: -1 },
+      populate: "user",
+      limit: 5,
+      page: page,
+    };
 
     // find paginado
-
-    // devolver resultado
-    return res.status(200).send({
-      page: page,
-      message: "Método sacar topics",
+    Topic.paginate({}, options, (err, topics) => {
+      if (err) {
+        return res.status(200).send({
+          status: "error",
+          message: "Error al recibir los docs",
+        });
+      }
+      if (!topics) {
+        return res.status(200).send({
+          status: "error",
+          message: "No se recibieron los topics",
+        });
+      }
+      return res.status(200).send({
+        status: "success",
+        topics: topics.docs,
+        totalDocs: topics.totalDocs,
+        totalPages: topics.totalPages,
+      });
     });
   },
-  //finalizando metodo para sacar los topicsv
+  //finalizando metodo para sacar los topics
+
+  // iniciando el método get my topics
+  getMyTopics: (req, res) => {
+    return res.status(200).send({
+      message: 'Método de mis topics'
+    })
+  }
+  // finalizando el método get my topics
 };
 
 module.exports = controller;
