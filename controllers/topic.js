@@ -106,12 +106,149 @@ var controller = {
   //finalizando metodo para sacar los topics
 
   // iniciando el método get my topics
-  getMyTopics: (req, res) => {
-    return res.status(200).send({
-      message: 'Método de mis topics'
-    })
-  }
+  getMyTopicsByUser: (req, res) => {
+    // Conseguir el id del usuario
+    var userId = req.params.user;
+
+    // Find con una condición de usuario
+    Topic.find({ user: userId })
+      .sort([["date", "descending"]])
+      .exec((err, topics) => {
+        if (err) {
+          return res.status(500).send({
+            status: "error",
+            message: "Error en los topics por usuario",
+          });
+        }
+        if (topics == "") {
+          return res.status(404).send({
+            status: "error",
+            message: "No se recibieron los topics",
+          });
+        }
+        return res.status(200).send({
+          status: "success",
+          topics,
+        });
+      });
+  },
   // finalizando el método get my topics
+
+  // iniciando el método del detalle del topic
+  getTopic: (req, res) => {
+    // saca el id del topic por la url
+    var topicId = req.params.id;
+    // find del topic por id
+    Topic.findById(topicId)
+      .populate("user")
+      .exec((err, topic) => {
+        if (err) {
+          return res.status(505).send({
+            status: "error",
+            message: "error al conseguir los topic",
+          });
+        }
+        if (topic == "") {
+          return res.status(404).send({
+            status: "error",
+            message: "No se encontraron los posts solicitados",
+          });
+        }
+        return res.status(404).send({
+          status: "success",
+          topic,
+        });
+      });
+  },
+  // finalizando el método del detalle del topic
+
+  // iniciando el método de actualización de topics
+  update: (req, res) => {
+    //  recojer el id del topic
+    var topicId = req.params.id;
+    // recojer los datos que llegan del post
+    var params = req.body;
+    // validar los datos
+    try {
+      var validate_title = !validator.isEmpty(params.title);
+      var validate_content = !validator.isEmpty(params.content);
+      var validate_lang = !validator.isEmpty(params.lang);
+    } catch (e) {
+      return res.status(200).send({
+        status: "error",
+        message: "No se mandaron los datos correctos intenta de nuevo",
+      });
+    }
+    if (validate_title && validate_content && validate_lang) {
+      // montar un json con los datos modificables
+      var update = {
+        title: params.title,
+        content: params.content,
+        lang: params.lang,
+      };
+      // find and update del topic por id y por un usuario id
+      Topic.findOneAndUpdate(
+        { _id: topicId, user: req.user.sub },
+        update,
+        { new: true },
+        (err, updateTopic) => {
+          if (err) {
+            return res.status(500).send({
+              status: "error",
+              message: "Error en la petición de actualización",
+            });
+          }
+          if (!updateTopic) {
+            return res.status(404).send({
+              status: "error",
+              message: "No se encontró el topic a editar",
+            });
+          }
+          // Devolver una respuesta
+          return res.status(200).send({
+            status: "success",
+            topic: updateTopic,
+          });
+        }
+      );
+    } else {
+      return res.status(200).send({
+        status: "error",
+        message: "Los datos no son correctos intenta de nuevo",
+      });
+    }
+  },
+  // finalizando el método de actualización de topics
+
+  // iniciando el método de eliminar los topics
+  deletePost: (req, res) => {
+    // sacar el id de la topic por el url
+    var topicId = req.params.id;
+    // find and delete por topicId y por userId
+    Topic.findOneAndDelete(
+      { _id: topicId, user: req.user.sub },
+      (err, topicRemove) => {
+        if (err) {
+          return res.status(500).send({
+            status: "error",
+            message: "Se presentó erro al eliminar el topic",
+          });
+        }
+        if (!topicRemove) {
+          return res.status(404).send({
+            status: "error",
+            message: "No se encontró el topic a eliminar",
+          });
+        }
+        // devolver una respuesta
+        return res.status(200).send({
+          status: "success",
+          topic: topicRemove,
+        });
+      }
+    );
+  },
+  // finalizando el método de eliminar los topics
 };
 
 module.exports = controller;

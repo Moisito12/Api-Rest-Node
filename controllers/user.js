@@ -192,34 +192,59 @@ var controller = {
           return res
             .status(200)
             .send({ message: "El email no pudo ser modificado" });
+        } else {
+          // Buscar y actualizar el documento
+          User.findOneAndUpdate(
+            { _id: userId },
+            params,
+            { new: true },
+            (err, userUpdated) => {
+              if (err) {
+                return res.status(500).send({
+                  status: "error",
+                  message: "Error con la actualización del usuario",
+                });
+              }
+              if (!userUpdated) {
+                return res.status(500).send({
+                  message: "error",
+                  message: "No se pudo actualizar el  usuario",
+                });
+              }
+              return res.status(200).send({
+                status: "success",
+                user: userUpdated,
+              });
+            }
+          );
         }
       });
+    } else {
+      // Buscar y actualizar el documento
+      User.findOneAndUpdate(
+        { _id: userId },
+        params,
+        { new: true },
+        (err, userUpdated) => {
+          if (err) {
+            return res.status(500).send({
+              status: "error",
+              message: "Error con la actualización del usuario",
+            });
+          }
+          if (!userUpdated) {
+            return res.status(500).send({
+              message: "error",
+              message: "No se pudo actualizar el  usuario",
+            });
+          }
+          return res.status(200).send({
+            status: "success",
+            user: userUpdated,
+          });
+        }
+      );
     }
-
-    // Buscar y actualizar el documento
-    User.findOneAndUpdate(
-      { _id: userId },
-      params,
-      { new: true },
-      (err, userUpdated) => {
-        if (err) {
-          return res.status(500).send({
-            status: "error",
-            message: "Error con la actualización del usuario",
-          });
-        }
-        if (!userUpdated) {
-          return res.status(500).send({
-            message: "error",
-            message: "No se pudo actualizar el  usuario",
-          });
-        }
-        return res.status(200).send({
-          status: "success",
-          user: userUpdated,
-        });
-      }
-    );
   }, // fin del método actualización
 
   // Iniciar el método para subir un avatar
@@ -329,7 +354,6 @@ var controller = {
           message: "No hay usuario que mostrar",
         });
       }
-
       return res.status(200).send({
         status: "success",
         user,
