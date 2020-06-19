@@ -12,4 +12,5 @@ router.get("/myTopics/:user?", TopicController.getMyTopicsByUser);
 router.get("/getTopic/:id", TopicController.getTopic);
 router.put("/topic/:id?", md_auth.auth, TopicController.update);
 router.delete("/topic/:id?", md_auth.auth, TopicController.deletePost);
+router.get("/search/:search", TopicController.search);
 module.exports = router;

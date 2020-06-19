@@ -249,6 +249,40 @@ var controller = {
     );
   },
   // finalizando el método de eliminar los topics
+
+  // Inciando el método de búsqueda de topics
+  search: (req, res) => {
+    // sacar el string a buscar por la url
+    var searchString = req.params.search;
+
+    // find or
+    Topic.find({
+      $or: [
+        { title: { $regex: searchString, $options: "i" } },
+        { content: { $regex: searchString, $options: "i" } },
+        { code: { $regex: searchString, $options: "i" } },
+        { lang: { $regex: searchString, $options: "i" } },
+      ],
+    }).exec((err, topics) => {
+      if (err) {
+        return res.status(500).send({
+          status: "error",
+          message: "Error al recibir los docs",
+        });
+      }
+      if (!topics) {
+        return res.status(404).send({
+          status: "error",
+          message: "0 resultados en la búsqueda",
+        });
+      }
+      return res.status(400).send({
+        status: "success",
+        topics,
+      });
+    });
+  },
+  // finalizando el método de búsqueda de topics
 };
 
 module.exports = controller;
