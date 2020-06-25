@@ -81,7 +81,7 @@ var controller = {
               }
               // Devolver una respuesta
               return res
-                .status(400)
+                .status(202)
                 .send({ status: "succes", user: userStored });
             }); // close save
           }); // close bcrypt
